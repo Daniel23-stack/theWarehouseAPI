@@ -1,4 +1,5 @@
-﻿using TheWarehouseAPI.Models;
+﻿using TheWarehouseAPI.DTOs;
+using TheWarehouseAPI.Models;
 using TheWarehouseAPI.Repositories;
 
 namespace TheWarehouseAPI.Services;
@@ -6,21 +7,47 @@ namespace TheWarehouseAPI.Services;
 public class OrderService
 {
     private readonly IOrderRepository _orderRepository;
-    private readonly IProductRepository _productRepository;
     private readonly IWarehouseRepository _warehouseRepository;
 
-    public OrderService(IOrderRepository orderRepository, IProductRepository productRepository, IWarehouseRepository warehouseRepository)
+    public OrderService(IOrderRepository orderRepository, IWarehouseRepository warehouseRepository)
     {
         _orderRepository = orderRepository;
-        _productRepository = productRepository;
         _warehouseRepository = warehouseRepository;
     }
 
-    public async Task<Order> CreateOrderAsync(Order order)
+    public async Task CreateOrderAsync(OrderDTO orderDto)
     {
-        // Logic to update quantities in warehouses
-        // Fetch product and warehouses, update quantities accordingly
+        var sourceWarehouse = await _warehouseRepository.GetByCodeAsync(orderDto.SourceWarehouseId.ToString());
+        var destinationWarehouse = await _warehouseRepository.GetByCodeAsync(orderDto.DestinationWarehouseId.ToString());
+
+        if (sourceWarehouse == null || destinationWarehouse == null)
+        {
+            throw new Exception("Source or destination warehouse not found.");
+        }
+
+        if (!sourceWarehouse.ProductQuantities.ContainsKey(orderDto.ProductId) || 
+            sourceWarehouse.ProductQuantities[orderDto.ProductId] < orderDto.Quantity)
+        {
+            throw new Exception("Insufficient quantity in source warehouse.");
+        }
+
+        // Update quantities
+        sourceWarehouse.ProductQuantities[orderDto.ProductId] -= orderDto.Quantity;
+        if (!destinationWarehouse.ProductQuantities.ContainsKey(orderDto.ProductId))
+        {
+            destinationWarehouse.ProductQuantities[orderDto.ProductId] = 0;
+        }
+        destinationWarehouse.ProductQuantities[orderDto.ProductId] += orderDto.Quantity;
+
+        // Create the order
+        var order = new Order
+        {
+            ProductId = orderDto.ProductId,
+            SourceWarehouseId = orderDto.SourceWarehouseId,
+            DestinationWarehouseId = orderDto.DestinationWarehouseId,
+            Quantity = orderDto.Quantity
+        };
+
         await _orderRepository.CreateAsync(order);
-        return order;
     }
 }

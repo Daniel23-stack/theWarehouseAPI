@@ -18,14 +18,22 @@ namespace TheWarehouseAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll() => Ok(await _productService.GetAllProductsAsync());
+        public async Task<IActionResult> GetAll()
+        {
+            var products = await _productService.GetAllProductsAsync();
+            return Ok(products);
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] ProductDto productDto)
+        public async Task<IActionResult> Create([FromBody] ProductDTO productDto)
         {
-            var product = new Product { Code = productDto.Code, Description = productDto.Description };
-            var createdProduct = await _productService.CreateProductAsync(product);
-            return CreatedAtAction(nameof(GetAll), new { id = createdProduct.Id }, createdProduct);
+            if (string.IsNullOrEmpty(productDto.Code) || string.IsNullOrEmpty(productDto.Description))
+            {
+                return BadRequest("Product code and description are required.");
+            }
+
+            await _productService.CreateProductAsync(productDto);
+            return CreatedAtAction(nameof(GetAll), new { code = productDto.Code }, productDto);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace TheWarehouseAPI.DTOs;
 
-public class OrderDto
+public class OrderDTO
 {
     public int ProductId { get; set; }
     public int SourceWarehouseId { get; set; }

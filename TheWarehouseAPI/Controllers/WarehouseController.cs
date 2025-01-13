@@ -17,13 +17,27 @@ public class WarehouseController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await _warehouseService.GetAllWarehousesAsync());
+    public async Task<IActionResult> GetAll()
+    {
+        var warehouses = await _warehouseService.GetAllWarehousesAsync();
+        return Ok(warehouses);
+    }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] WarehouseDto warehouseDto)
+    public async Task<IActionResult> Create([FromBody] WarehouseDTO warehouseDto)
     {
-        var warehouse = new Warehouse { Code = warehouseDto.Code, Name = warehouseDto.Name };
-        var createdWarehouse = await _warehouseService.CreateWarehouseAsync(warehouse);
-        return CreatedAtAction(nameof(GetAll), new { id = createdWarehouse.Id }, createdWarehouse);
+        if (string.IsNullOrEmpty(warehouseDto.Code) || string.IsNullOrEmpty(warehouseDto.Name))
+        {
+            return BadRequest("Warehouse code and name are required.");
+        }
+
+        await _warehouseService.CreateWarehouseAsync(warehouseDto);
+        return CreatedAtAction(nameof(GetAll), new { code = warehouseDto.Code }, warehouseDto);
+    }
+    [HttpGet("products")]
+    public async Task<IActionResult> GetProductsInWarehouses([FromQuery] ProductInWarehouseQueryDTO queryDto)
+    {
+        var productsInWarehouses = await _warehouseService.GetProductsInWarehousesAsync(queryDto);
+        return Ok(productsInWarehouses);
     }
 }

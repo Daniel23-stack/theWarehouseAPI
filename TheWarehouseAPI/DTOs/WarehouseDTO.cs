@@ -1,6 +1,6 @@
 ﻿namespace TheWarehouseAPI.DTOs;
 
-public class WarehouseDto
+public class WarehouseDTO
 {
     public string Code { get; set; }
     public string Name { get; set; }
